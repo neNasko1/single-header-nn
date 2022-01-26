@@ -170,14 +170,6 @@ class Grid {
 				this.color[i][j] = false;
 			}
 		}
-
-		this.input = [];
-		for(let i = 0; i < this.height; i ++) {
-			this.input[i] = [];
-			for(let j = 0; j < this.width; j ++) {
-				this.input[i][j] = 0;
-			}
-		}
 	}
 
 	draw(x, y, w, h) {
@@ -205,17 +197,66 @@ class Grid {
 
 				if((j - 1) * smallw <= x && x <= (j + 2) * smallw && (i - 1) * smallh <= y && y <= (i + 2) * smallh) {
 					this.color[i][j] = true;
-					this.input[Math.floor(i / this.subHeight)][Math.floor(j / this.subWidth)] += 1 / (this.subHeight * this.subWidth);
 				}
 			}
 		}		
 	}
 
 	getColors() {
+		let minx = this.width * this.subWidth, miny = this.height * this.subHeight, maxx = 0, maxy = 0;
+		let input = [];
+		for(let i = 0; i < this.height; i ++) {
+			input[i] = [];
+			for(let j = 0; j < this.width; j ++) {
+				input[i][j] = 0;
+			}
+		}
+
+		for(let i = 0; i < this.height * this.subHeight; i ++) {
+			for(let j = 0; j < this.width * this.subWidth; j ++) {
+				if(this.color[i][j]) {
+					minx = Math.min(minx, j);
+					miny = Math.min(miny, i);
+					maxx = Math.max(maxx, j);
+					maxy = Math.max(maxy, i);
+				}
+			}
+		}
+
+		if(this.width * this.subWidth * 0.5 >= (maxx - minx)) {
+			let toAdd = (this.width * this.subWidth * 0.5 - (maxx - minx)) / 2;
+			maxx += toAdd;
+			minx -= toAdd;
+		}
+
+		if(this.height * this.subHeight * 0.5 >= (maxy - miny)) {
+			let toAdd = (this.height * this.subHeight * 0.5 - (maxy - miny)) / 2;
+			maxy += toAdd;
+			miny -= toAdd;
+		}
+
+		const leftbound = 0.25;
+		const topbound = 0.15;
+
+		for(let i = 0; i < this.height * this.subHeight; i ++) {
+			for(let j = 0; j < this.width * this.subWidth; j ++) {
+				if(!this.color[i][j]) {continue;}
+
+				let diffx = j - minx;
+				let diffy = i - miny;
+				input[Math.floor(this.height * (topbound + (1 - 2 * topbound) * diffy / (maxy - miny)))]
+					 [Math.floor(this.width  * (leftbound + (1 - 2 * leftbound) * diffx / (maxx - minx)))] += 
+					 1 / (this.subHeight * this.subWidth) * (1 - topbound) * this.height / diffy * (1 - leftbound) * this.width / diffx; 
+			}
+		}
+
 		let ret = new Matrix(1, this.width * this.height);
 		for(let i = 0; i < this.height; i ++) {
 			for(let j = 0; j < this.width; j ++) {
-				ret.data[0][i * this.width + j] = this.input[i][j];
+				ret.data[0][i * this.width + j] = Math.min(1, input[i][j]);
+
+				ctx.fillStyle = `rgba(${input[i][j] * 255}, 0, 0, 1)`;
+				ctx.fillRect(200 + j * 15, 1000 + i * 15, 10, 10);
 			}
 		}		
 		return ret;

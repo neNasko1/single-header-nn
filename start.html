@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+	<title>Light simulation</title>
+<head>
+</head>
+
+</body>
+
+<button id="reset-btn"> Reset </button>
+<canvas id="canvas" width="2000" height="2000"></canvas>
+
+<script type="text/javascript" src='nn.js'></script>
+<script type="text/javascript">
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+class Matrix {
+	constructor(N, M) {
+		this.N = N;
+		this.M = M;
+
+		this.data = [];
+		for(let i = 0; i < this.N; i ++) {
+			this.data[i] = [];
+			for(let j = 0; j < this.M; j ++) {
+				this.data[i][j] = 0;
+			}
+		}
+	}
+
+	static mult(a, b) {
+		let ret = new Matrix(a.N, b.M);
+
+		for(let i = 0; i < a.N; i ++) {
+			for(let j = 0; j < b.M; j ++) {
+				for(let k = 0; k < a.M; k ++) {
+					ret.data[i][j] += a.data[i][k] * b.data[k][j];
+				}
+			}
+		}
+
+		return ret;
+	}
+
+	static add(a, b) {
+		let ret = new Matrix(a.N, a.M);
+
+		for(let i = 0; i < a.N; i ++) {
+			for(let j = 0; j < a.M; j ++) {
+				ret.data[i][j] = a.data[i][j] + b.data[i][j];
+			}
+		}
+
+		return ret;
+	}
+
+	static subtract(a, b) {
+		let ret = new Matrix(a.N, a.M);
+
+		for(let i = 0; i < a.N; i ++) {
+			for(let j = 0; j < a.M; j ++) {
+				ret.data[i][j] = a.data[i][j] - b.data[i][j];
+			}
+		}
+
+		return ret;
+	}
+
+	static apply(a, f) {
+		let ret = new Matrix(a.N, a.M);
+
+		for(let i = 0; i < a.N; i ++) {
+			for(let j = 0; j < a.M; j ++) {
+				ret.data[i][j] = f(a.data[i][j]);
+			}
+		}
+
+		return ret;
+	} 
+
+	static getBest(a) {
+		let ret = {x: 0, y: 0};
+
+		for(let i = 0; i < a.N; i ++) {
+			for(let j = 0; j < a.M; j ++) {
+				if(a.data[i][j] > a.data[ret.x][ret.y]) {
+					ret = {x: i, y: j};
+				}
+			}
+		}
+
+		return ret;
+	}
+}
+
+class NeuralNetwork {
+	constructor(layers) {
+		this.layers = layers;
+
+		this.weight = [];
+		for(let i = 1; i < this.layers.length; i ++) {
+			this.weight[i - 1] = new Matrix(this.layers[i - 1], this.layers[i]);
+		}
+
+		this.bias = [];
+		for(let i = 1; i < this.layers.length; i ++) {
+			this.bias[i - 1] = new Matrix(1, this.layers[i]);
+		}
+	}
+
+	forwardPropagation(input) {
+		const sigmoid = (x) => {return 1 / (1 + Math.exp(-x));};
+		let ret = input;
+
+		for(let i in this.weight) {
+			ret = Matrix.apply(Matrix.add(Matrix.mult(ret, this.weight[i]), this.bias[i]), sigmoid);
+		}
+
+		return ret;
+	}
+
+	static readFromText(text) {
+		const getNextNumber = () => {
+			let ret = '';
+			while(ret == '') {
+				ret = text.pop();
+			}
+			return parseFloat(ret);
+		};
+
+		let cnt = getNextNumber();
+		let layers = [];
+		for(let i = 0; i < cnt; i ++) {
+			layers.push(getNextNumber());
+		}
+		let ret = new NeuralNetwork(layers);
+
+		for(let i = 0; i < ret.layers.length - 1; i ++) {
+			for(let j = 0; j < ret.weight[i].N; j ++) {
+				for(let k = 0; k < ret.weight[i].M; k ++) {
+					ret.weight[i].data[j][k] = getNextNumber();
+				}
+			}
+		}
+
+		for(let i = 0; i < ret.layers.length - 1; i ++) {
+			for(let j = 0; j < ret.bias[i].N; j ++) {
+				for(let k = 0; k < ret.bias[i].M; k ++) {
+					ret.bias[i].data[j][k] = getNextNumber();
+				}
+			}
+		}
+
+		return ret;
+	}
+}
+
+class Grid {
+	constructor(width, height, subWidth, subHeight) {
+		this.width = width;
+		this.height = height;
+		this.subWidth = subWidth;
+		this.subHeight = subHeight;
+
+		this.color = [];
+		for(let i = 0; i < this.height * this.subHeight; i ++) {
+			this.color[i] = [];
+			for(let j = 0; j < this.width * this.subWidth; j ++) {
+				this.color[i][j] = false;
+			}
+		}
+
+		this.input = [];
+		for(let i = 0; i < this.height; i ++) {
+			this.input[i] = [];
+			for(let j = 0; j < this.width; j ++) {
+				this.input[i][j] = 0;
+			}
+		}
+	}
+
+	draw(x, y, w, h) {
+		ctx.fillStyle = 'black';
+		ctx.strokeRect(x, y, w, h);
+		for(let i = 0; i < this.height * this.subHeight; i ++) {
+			for(let j = 0; j < this.width * this.subWidth; j ++) {
+				if(this.color[i][j]) {
+					ctx.fillStyle = 'black';
+				} else {
+					ctx.fillStyle = 'white';
+				}
+				ctx.fillRect(x + j * w / (this.width * this.subWidth), y + i * h / (this.height * this.subWidth), 
+								 w / (this.width * this.subWidth), h / (this.height * this.subWidth));
+			}
+		}
+	}
+
+	mouseDown(x, y) {
+		let smallw = 1 / (this.width * this.subWidth);
+		let smallh = 1 / (this.height * this.subHeight);
+		for(let i = 0; i < this.height * this.subHeight; i ++) {
+			for(let j = 0; j < this.width * this.subWidth; j ++) {
+				if(this.color[i][j]) {continue;}
+
+				if((j - 1) * smallw <= x && x <= (j + 2) * smallw && (i - 1) * smallh <= y && y <= (i + 2) * smallh) {
+					this.color[i][j] = true;
+					this.input[Math.floor(i / this.subHeight)][Math.floor(j / this.subWidth)] += 1 / (this.subHeight * this.subWidth);
+				}
+			}
+		}		
+	}
+
+	getColors() {
+		let ret = new Matrix(1, this.width * this.height);
+		for(let i = 0; i < this.height; i ++) {
+			for(let j = 0; j < this.width; j ++) {
+				ret.data[0][i * this.width + j] = this.input[i][j];
+			}
+		}		
+		return ret;
+	}
+}
+
+let nn = NeuralNetwork.readFromText(NNINPUT.split(/\n| /).reverse());
+let gridx = 150, gridy = 50, gridw = 400, gridh = 400;
+let grid = new Grid(28, 28, 2, 2);
+let mousePressed = false;
+let mousex = 0, mousey = 0;
+
+function update() {	
+	if(gridx <= mousex && mousex < gridx + gridw && gridy <= mousey && mousey < gridy + gridh && mousePressed) {
+		grid.mouseDown((mousex - gridx) / gridw, (mousey - gridy) / gridh);
+	}
+}
+
+function draw() {
+	grid.draw(gridx, gridy, gridw, gridh);
+
+	const ret = nn.forwardPropagation(grid.getColors());
+	for(let i = 0; i < 10; i ++) {
+		ctx.fillStyle = `rgba(0, ${ret.data[0][i] * 255}, ${ret.data[0][i] * 255}, 1)`;
+		ctx.fillRect(700, 90 + 35 * i, 30, 30);
+		ctx.font = '25px serif';
+		ctx.fillText(`${i}`, 750, 110 + 35 * i);
+	} 
+}
+
+window.addEventListener('mousedown', (e) => {
+	mousePressed = true;
+});
+
+window.addEventListener('mouseup', (e) => {
+	mousePressed = false;
+});
+
+window.addEventListener('mousemove', (e) => {
+    let rect = canvas.getBoundingClientRect();
+
+   	mousex = e.x - rect.left;
+	mousey = e.y - rect.top;
+});
+
+document.getElementById('reset-btn').addEventListener('click', () => {
+	grid = new Grid(28, 28, 2, 2);
+});
+
+function loop() {
+	update();
+	ctx.clearRect(0, 0, canvas.width, canvas.height);
+	draw();
+
+	window.requestAnimationFrame(loop);
+}
+
+loop();
+
+</script>
+
+</body>
+
+</html>

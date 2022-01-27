@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-	<title>Light simulation</title>
+	<title>Digit recognizer</title>
 <head>
 </head>
 
@@ -221,18 +221,6 @@ class Grid {
 					maxy = Math.max(maxy, i);
 				}
 			}
-		}
-
-		if(this.width * this.subWidth * 0.5 >= (maxx - minx)) {
-			let toAdd = (this.width * this.subWidth * 0.5 - (maxx - minx)) / 2;
-			maxx += toAdd;
-			minx -= toAdd;
-		}
-
-		if(this.height * this.subHeight * 0.5 >= (maxy - miny)) {
-			let toAdd = (this.height * this.subHeight * 0.5 - (maxy - miny)) / 2;
-			maxy += toAdd;
-			miny -= toAdd;
 		}
 
 		const leftbound = 0.25;

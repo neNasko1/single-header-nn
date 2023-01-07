@@ -1,7 +1,6 @@
 #include <iostream>
-#include "ml.cpp"
-#include "ml.h"
-#include "my_math.h"
+#include "src/small_nn.h"
+#include <cassert>
 
 void testLinAlg() {
     std::cout << "Testing linear algebra" << std::endl;
@@ -29,38 +28,30 @@ void testML() {
 
     LinAlg::Matrix<1, 3> m;
     MachineLearning::ApplicationLayer<3, Continuous::Adder<10> > f;
-
     std::cout << f.forwardPropagate(m) << std::endl;
 
     #define FullyConnectedApplicationLayer(N, M, F) MachineLearning::DenseLayer<N, M>, MachineLearning::BiasLayer<M>, MachineLearning::ApplicationLayer<M, F>
-
     MachineLearning::NeuralNetwork<
-        FullyConnectedApplicationLayer(3, 3, Continuous::Sigmoid),
-        FullyConnectedApplicationLayer(3, 1, Continuous::Sigmoid)
+        FullyConnectedApplicationLayer(3, 10, Continuous::Sigmoid),
+        FullyConnectedApplicationLayer(10, 1, Continuous::Relu)
     > nn;
-
     std::cout << nn.forwardPropagate(m) << std::endl;
 
     std::vector<std::pair<LinAlg::Matrix<1, 3>, LinAlg::Matrix<1, 1> > > dataPoints;
-
-    for(size_t i = 0; i < 2; i ++) {
+    const auto SAMPLES = 10;
+    for(size_t i = 1; i < SAMPLES; i ++) {
         LinAlg::Matrix<1, 3> input;
         LinAlg::Matrix<1, 1> output;
 
         for(size_t j = 0; j < 3; j ++) { input[0][j] = (j + 1) * i; }
-        output[0][0] = i;
+        output[0][0] = (double)i / SAMPLES;
 
         dataPoints.push_back({input, output});
     }
 
-    for(const auto &it : dataPoints) {
-        std::cout << it.first << " -> " << it.second << " " << nn.forwardPropagate(it.first) << std::endl;
-    }
     MachineLearning::Trainer<Continuous::QuadraticLoss, decltype(nn)> trainer(&nn, dataPoints);
-    trainer.run(10, 1000, 10, 1);
-    for(const auto &it : dataPoints) {
-        std::cout << it.first << " -> " << nn.forwardPropagate(it.first) << std::endl;
-    }
+    trainer.run(10000, 10, 10, 0.0005);
+    assert(trainer.findTotalLoss() <= 0.01);
 }
 
 int main() {

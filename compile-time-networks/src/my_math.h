@@ -20,8 +20,12 @@ struct DyadicFunction {
     static T derivative(const T x, const T y);
 };
 
-
 struct Sigmoid : public Function<double> {
+    static double apply(const double x);
+    static double derivative(const double x);
+};
+
+struct Relu : public Function<double> {
     static double apply(const double x);
     static double derivative(const double x);
 };
@@ -40,6 +44,9 @@ struct QuadraticLoss : public DyadicFunction<double> {
     static double apply(const double x, const double y);
     static double derivative(const double x, const double y);
 };
+
+template<int32_t MIN, int32_t MAX>
+double randomValue();
 
 };
 

@@ -1,4 +1,6 @@
-#include "my_math.cpp"
+#pragma once
+
+#include "my_math.h"
 #include "ml.h"
 #include <cstdint>
 #include <iostream>
@@ -126,7 +128,6 @@ void NeuralNetwork<FirstLayer, Rest...>::commitDeltas(const double deltaRatio) {
     this->restNetwork.commitDeltas(deltaRatio);
 }
 
-
 template<typename FirstLayer>
 typename NeuralNetwork<FirstLayer>::Output NeuralNetwork<FirstLayer>::forwardPropagate(
     const NeuralNetwork<FirstLayer>::Input &input
@@ -174,7 +175,9 @@ void Trainer<Loss, Model>::run(
                 this->nn->commitDeltas(delta);
             }
         }
-        std::cout << "Training network " << i << " " << this->findTotalLoss() << std::endl;
+        if(i % 100 == 0) {
+            std::cout << "Training network " << i << " " << this->findTotalLoss() << std::endl;
+        }
     }
 }
 

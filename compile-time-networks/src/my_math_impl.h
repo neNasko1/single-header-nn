@@ -1,3 +1,5 @@
+#pragma once
+
 #include <iostream>
 #include <ostream>
 #include <ranges>
@@ -9,12 +11,20 @@
 
 namespace Continuous {
 
-double Sigmoid::apply(const double x) {
+inline double Sigmoid::apply(const double x) {
     return 1.0 / (1.0 + std::exp(-x));
 }
 
-double Sigmoid::derivative(const double x) {
+inline double Sigmoid::derivative(const double x) {
     return Sigmoid::apply(x) * (1.0 - Sigmoid::apply(x));
+}
+
+inline double Relu::apply(const double x) {
+    return (x >= 0) ? x : 0;
+}
+
+inline double Relu::derivative(const double x) {
+    return (x >= 0) ? 1 : 0;
 }
 
 template<int C>
@@ -27,17 +37,18 @@ double Mult<C>::apply(const double x) {
     return x * C;
 }
 
-double QuadraticLoss::apply(const double x, const double y) {
-    return (x - y) * (x - y);
-}
-double QuadraticLoss::derivative(const double x, const double y) {
-    return 2 * x - 2 * y;
-}
-
 template<int32_t MIN, int32_t MAX>
 double randomValue() {
     static_assert(MIN <= MAX, "Random value expects MIN <= MAX");
-    return MIN + (double)rand() / RAND_MAX * (MAX - MIN);
+    const auto ret = MIN + ((double)rand()) / (double)RAND_MAX * (MAX - MIN);
+    return ret;
+}
+
+inline double QuadraticLoss::apply(const double x, const double y) {
+    return (x - y) * (x - y);
+}
+inline double QuadraticLoss::derivative(const double x, const double y) {
+    return 2 * x - 2 * y;
 }
 
 };

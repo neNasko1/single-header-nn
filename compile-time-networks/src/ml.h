@@ -89,7 +89,6 @@ struct Trainer {
         const size_t blockSize,
         const double delta = 0.01
     );
-
     double findTotalLoss() const;
 };
 

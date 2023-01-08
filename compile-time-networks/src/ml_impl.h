@@ -185,8 +185,11 @@ template<typename Loss, typename Model>
 double Trainer<Loss, Model>::findTotalLoss() const {
     double ret = 0;
     for(const auto &elem : this->data) {
-        for(const auto it : LinAlg::zip<Loss::apply>(this->nn->forwardPropagate(elem.first), elem.second).data) {
-            ret += it;
+        const auto loss = LinAlg::zip<Loss::apply>(this->nn->forwardPropagate(elem.first), elem.second);
+        for(size_t i = 0; i < Model::Output::SIZE_N; i ++) {
+            for(size_t j = 0; j < Model::Output::SIZE_M; j ++) {
+                ret += loss[i][j];
+            }
         }
     }
     return ret;

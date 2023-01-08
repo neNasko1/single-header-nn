@@ -4,8 +4,9 @@
 #include <ostream>
 #include <ranges>
 #include <math.h>
-#include <cstdint>
+#include <cstring>
 #include <vector>
+#include <stdio.h>
 
 #include "my_math.h"
 
@@ -56,19 +57,31 @@ inline double QuadraticLoss::derivative(const double x, const double y) {
 namespace LinAlg {
 
 template<size_t N, size_t M>
-Matrix<N, M>::Matrix() : data(N * M) { for(auto &it : this->data) { it = Continuous::randomValue<-1, 1>(); } }
+Matrix<N, M>::Matrix()  {
+    for(size_t i = 0; i < N; i ++) {
+        for(size_t j = 0; j < M; j ++) {
+            this->data[i][j] = Continuous::randomValue<-1, 1>();
+        }
+    }
+}
 
 template<size_t N, size_t M>
-Matrix<N, M>::Matrix(const double value) : data(N * M, value) { }
+Matrix<N, M>::Matrix(const double value) {
+    for(size_t i = 0; i < N; i ++) {
+        for(size_t j = 0; j < M; j ++) {
+            this->data[i][j] = value;
+        }
+    }
+}
 
 template<size_t N, size_t M>
 double* Matrix<N, M>::operator[](const size_t &i) {
-    return &*(this->data.begin() + i*M);
+    return this->data[i];
 }
 
 template<size_t N, size_t M>
 const double* Matrix<N, M>::operator[](const size_t &i) const {
-    return &*(this->data.begin() + i*M);
+    return this->data[i];
 }
 
 template<size_t N, size_t M>
@@ -112,7 +125,7 @@ Matrix<N, M> Matrix<N, M>::operator-(const Matrix<N, M> &oth) const {
 
 template<size_t N, size_t M>
 Matrix<N, M> Matrix<N, M>::operator=(const Matrix<N, M> &oth) {
-    this->data = oth.data;
+    memcpy(this->data, oth.data, sizeof(this->data));
     return *this;
 }
 

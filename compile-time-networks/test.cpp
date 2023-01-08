@@ -35,6 +35,7 @@ void testML() {
         FullyConnectedApplicationLayer(3, 10, Continuous::Sigmoid),
         FullyConnectedApplicationLayer(10, 1, Continuous::Relu)
     > nn;
+    std::cout << "Network size " << sizeof(decltype(nn)) << std::endl;
     std::cout << nn.forwardPropagate(m) << std::endl;
 
     std::vector<std::pair<LinAlg::Matrix<1, 3>, LinAlg::Matrix<1, 1> > > dataPoints;

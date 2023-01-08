@@ -57,7 +57,7 @@ struct Matrix {
     static constexpr auto SIZE_N = N;
     static constexpr auto SIZE_M = M;
 
-    std::vector<double> data;
+    double data[N][M];
 
     Matrix();
     Matrix(const double value);

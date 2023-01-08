@@ -1,3 +1,4 @@
+#include "src/my_math.h"
 #include "src/small_nn.h"
 #include <algorithm>
 #include <cstdint>
@@ -52,14 +53,15 @@ void outputNetworkResults(const auto nn, const auto testPoints, const std::strin
 int main() {
     #define FullyConnectedApplicationLayer(N, M, F) MachineLearning::DenseLayer<N, M>, MachineLearning::BiasLayer<M>, MachineLearning::ApplicationLayer<M, F>
     MachineLearning::NeuralNetwork<
-        FullyConnectedApplicationLayer(IMAGE_N * IMAGE_M, 50, Continuous::LeakyRelu),
-        FullyConnectedApplicationLayer(50, LABEL_CNT, Continuous::Sigmoid)
+        FullyConnectedApplicationLayer(IMAGE_N * IMAGE_M, 128, Continuous::Sigmoid),
+        FullyConnectedApplicationLayer(128, 64, Continuous::Sigmoid),
+        FullyConnectedApplicationLayer(64, LABEL_CNT, Continuous::Sigmoid)
     > nn;
 
     auto dataPoints = readInput("train.csv");
     std::cout << "Read data points " << dataPoints.size() << std::endl;
     MachineLearning::Trainer<Continuous::QuadraticLoss, decltype(nn)> trainer(&nn, dataPoints);
-    trainer.run(5, 10, 1000, 0.05);
+    trainer.run(2, 10, 420, 1);
 
     const auto testPoints = readInput("test.csv", true);
     outputNetworkResults(nn, testPoints, "output.csv");

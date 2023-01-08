@@ -170,6 +170,8 @@ void Trainer<Loss, Model>::runMinibatch(
         this->nn->commitDeltas(delta / (interval.second - interval.first));
     }
     const auto totalLoss = this->findTotalLoss();
+    std::cout << "\r" << totalLoss << " for interval(" << interval.first << " " << interval.second << ")";
+    std::flush(std::cout);
 }
 
 template<typename Loss, typename Model>
@@ -185,7 +187,7 @@ void Trainer<Loss, Model>::run(
             const auto end = std::min(start + batchSize, this->data.size());
             this->runMinibatch({start, end}, minibatchIter, delta);
         }
-        std::cout << "Iteration " << i << " Loss: " << this->findTotalLoss() << std::endl;
+        std::cout << "\rIteration " << i << " Loss: " << this->findTotalLoss() << std::endl;
     }
 }
 

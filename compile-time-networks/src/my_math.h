@@ -30,6 +30,11 @@ struct Relu : public Function<double> {
     static double derivative(const double x);
 };
 
+struct LeakyRelu : public Function<double> {
+    static double apply(const double x);
+    static double derivative(const double x);
+};
+
 template<int C>
 struct Adder : public Function<double> {
     static double apply(const double x);
@@ -57,12 +62,12 @@ struct Matrix {
     static constexpr auto SIZE_N = N;
     static constexpr auto SIZE_M = M;
 
+    static Matrix<N, M> random();
+
     double data[N][M];
 
-    Matrix();
-    Matrix(const double value);
-    Matrix(const Matrix<N, M> &oth) = default;
-    Matrix(Matrix<N, M> &&oth) = default;
+    Matrix(const double value = 0);
+    Matrix(const Matrix<N, M> &oth);
 
     double* operator[](const size_t &i);
     const double* operator[](const size_t &i) const;

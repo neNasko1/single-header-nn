@@ -2,13 +2,15 @@
 
 #include "my_math.h"
 #include "ml.h"
+#include <algorithm>
 #include <cstdint>
 #include <iostream>
+#include <ostream>
 
 namespace MachineLearning {
 
 template<size_t N, size_t M>
-DenseLayer<N, M>::DenseLayer() : weights(), deltas(0) { }
+DenseLayer<N, M>::DenseLayer() : weights(LinAlg::Matrix<N, M>::random()), deltas(0) { }
 
 template<size_t N, size_t M>
 typename DenseLayer<N, M>::Output DenseLayer<N, M>::forwardPropagate(
@@ -32,14 +34,14 @@ typename DenseLayer<N, M>::Input DenseLayer<N, M>::backPropagate(
 }
 
 template<size_t N, size_t M>
-void DenseLayer<N, M>::commitDeltas(const double deltaRation) {
-    this->weights = this->weights - this->deltas * deltaRation;
+void DenseLayer<N, M>::commitDeltas(const double deltaRatio) {
+    this->weights = this->weights - this->deltas * deltaRatio;
     this->deltas = LinAlg::Matrix<N, M>(0);
 }
 
 
 template<size_t N>
-BiasLayer<N>::BiasLayer() : bias(), deltas(0) { }
+BiasLayer<N>::BiasLayer() : bias(LinAlg::Matrix<1, N>::random()), deltas(0) { }
 
 template<size_t N>
 typename BiasLayer<N>::Output BiasLayer<N>::forwardPropagate(
@@ -54,15 +56,13 @@ typename BiasLayer<N>::Input BiasLayer<N>::backPropagate(
     const BiasLayer<N>::Input &activation,
     const BiasLayer<N>::Output &outputDerivatives
 ) {
-    for(size_t i = 0; i < N; i ++) {
-        this->deltas[0][i] = outputDerivatives[0][i];
-    }
+    this->deltas = this->deltas + outputDerivatives;
     return outputDerivatives;
 }
 
 template<size_t N>
-void BiasLayer<N>::commitDeltas(const double deltaRation) {
-    this->bias = this->bias - this->deltas * deltaRation;
+void BiasLayer<N>::commitDeltas(const double deltaRatio) {
+    this->bias = this->bias - this->deltas * deltaRatio;
     this->deltas = LinAlg::Matrix<1, N>(0);
 }
 
@@ -88,7 +88,7 @@ typename ApplicationLayer<N, F>::Input ApplicationLayer<N, F>::backPropagate(
 }
 
 template<size_t N, typename F>
-void ApplicationLayer<N, F>::commitDeltas(const double deltaRation) { }
+void ApplicationLayer<N, F>::commitDeltas(const double deltaRatio) { }
 
 
 template<typename FirstLayer, typename ...Rest>
@@ -153,31 +153,39 @@ void NeuralNetwork<FirstLayer>::commitDeltas(const double deltaRatio) {
     this->firstLayer.commitDeltas(deltaRatio);
 }
 
-
 template<typename Loss, typename Model>
 Trainer<Loss, Model>::Trainer(Model *nn, const std::vector<typename Trainer<Loss, Model>::DataPoint> &data)
     : nn(nn), data(data) {}
 
 template<typename Loss, typename Model>
-void Trainer<Loss, Model>::run(
+void Trainer<Loss, Model>::runMinibatch(
+    const std::pair<size_t, size_t> interval,
     const size_t iter,
-    const size_t minibatchIter,
-    const size_t blockSize,
-    const double   delta
+    const double delta
 ) {
-    for(size_t i = 0; i < iter; i ++) {
-        for(size_t start = 0; start < this->data.size(); start += blockSize) {
-            const auto end = std::min(start + blockSize, this->data.size());
-            for(size_t j = 0; j < minibatchIter; j ++) {
-                for(size_t elem = start; elem < end; elem ++) {
-                    this->nn->template backPropagate<Loss>(this->data[elem].first, this->data[elem].second);
-                }
-                this->nn->commitDeltas(delta);
-            }
+    for(size_t j = 0; j < iter; j ++) {
+        for(size_t elem = interval.first; elem < interval.second; elem ++) {
+            this->nn->template backPropagate<Loss>(this->data[elem].first, this->data[elem].second);
         }
-        if(i % 100 == 0) {
-            std::cout << "Training network " << i << " " << this->findTotalLoss() << std::endl;
+        this->nn->commitDeltas(delta / (interval.second - interval.first));
+    }
+    const auto totalLoss = this->findTotalLoss();
+}
+
+template<typename Loss, typename Model>
+void Trainer<Loss, Model>::run(
+    const size_t epochs,
+    const size_t minibatchIter,
+    const size_t batchSize,
+    const double delta
+) {
+    for(size_t i = 0; i < epochs; i ++) {
+        std::random_shuffle(this->data.begin(), this->data.end());
+        for(size_t start = 0; start < this->data.size(); start += batchSize) {
+            const auto end = std::min(start + batchSize, this->data.size());
+            this->runMinibatch({start, end}, minibatchIter, delta);
         }
+        std::cout << "Iteration " << i << " Loss: " << this->findTotalLoss() << std::endl;
     }
 }
 
@@ -185,7 +193,8 @@ template<typename Loss, typename Model>
 double Trainer<Loss, Model>::findTotalLoss() const {
     double ret = 0;
     for(const auto &elem : this->data) {
-        const auto loss = LinAlg::zip<Loss::apply>(this->nn->forwardPropagate(elem.first), elem.second);
+        const auto out = this->nn->forwardPropagate(elem.first);
+        const auto loss = LinAlg::zip<Loss::apply>(out, elem.second);
         for(size_t i = 0; i < Model::Output::SIZE_N; i ++) {
             for(size_t j = 0; j < Model::Output::SIZE_M; j ++) {
                 ret += loss[i][j];

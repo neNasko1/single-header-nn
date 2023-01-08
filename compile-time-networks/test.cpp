@@ -23,20 +23,14 @@ void testLinAlg() {
     std::cout << mult_scalar << std::endl;
 }
 
-void testML() {
-    std::cout << "Testing machine learning" << std::endl;
-
-    LinAlg::Matrix<1, 3> m;
-    MachineLearning::ApplicationLayer<3, Continuous::Adder<10> > f;
-    std::cout << f.forwardPropagate(m) << std::endl;
+void testMLTraining() {
+    std::cout << "Started testing full training" << std::endl;
 
     #define FullyConnectedApplicationLayer(N, M, F) MachineLearning::DenseLayer<N, M>, MachineLearning::BiasLayer<M>, MachineLearning::ApplicationLayer<M, F>
     MachineLearning::NeuralNetwork<
         FullyConnectedApplicationLayer(3, 10, Continuous::Sigmoid),
-        FullyConnectedApplicationLayer(10, 1, Continuous::Relu)
+        FullyConnectedApplicationLayer(10, 1, Continuous::Sigmoid)
     > nn;
-    std::cout << "Network size " << sizeof(decltype(nn)) << std::endl;
-    std::cout << nn.forwardPropagate(m) << std::endl;
 
     std::vector<std::pair<LinAlg::Matrix<1, 3>, LinAlg::Matrix<1, 1> > > dataPoints;
     const auto SAMPLES = 10;
@@ -51,8 +45,45 @@ void testML() {
     }
 
     MachineLearning::Trainer<Continuous::QuadraticLoss, decltype(nn)> trainer(&nn, dataPoints);
-    trainer.run(10000, 10, 10, 0.0005);
-    assert(trainer.findTotalLoss() <= 0.01);
+    trainer.run(1000, 10, dataPoints.size(), 0.05);
+    const auto finalTotalLoss = trainer.findTotalLoss();
+    std::cout << finalTotalLoss << std::endl;
+    assert(finalTotalLoss <= 0.01);
+}
+
+void testMLBackpropagation() {
+    std::cout << "Started testing backpropagation" << std::endl;
+
+    #define FullyConnectedApplicationLayer(N, M, F) MachineLearning::DenseLayer<N, M>, MachineLearning::BiasLayer<M>, MachineLearning::ApplicationLayer<M, F>
+    MachineLearning::NeuralNetwork<
+        FullyConnectedApplicationLayer(3, 2, Continuous::Sigmoid)
+    > nn;
+
+    LinAlg::Matrix<1, 3> input; input[0][0] = 0.1; input[0][1] = -0.5; input[0][2] = 0.6;
+    LinAlg::Matrix<1, 2> output; output[0][0] = 0.5; output[0][1] = 0.2;
+
+    const auto initial = nn.forwardPropagate(input);
+
+    for(size_t i = 0; i < 1000; i ++) {
+        nn.backPropagate<Continuous::QuadraticLoss>(input, output);
+        const auto whox = rand() % 3, whoy = rand() % 2;
+        nn.firstLayer.weights[whox][whoy] -= nn.firstLayer.deltas[whox][whoy];
+        nn.firstLayer.deltas = LinAlg::Matrix<3, 2>(0);
+    }
+
+    const auto final = nn.forwardPropagate(input);
+    std::cout << "Optimized " << final << " " << output << std::endl;
+}
+
+void testML() {
+    std::cout << "Testing machine learning" << std::endl;
+
+    LinAlg::Matrix<1, 3> m;
+    MachineLearning::ApplicationLayer<3, Continuous::Adder<10> > f;
+    std::cout << f.forwardPropagate(m) << std::endl;
+
+    testMLTraining();
+    testMLBackpropagation();
 }
 
 int main() {

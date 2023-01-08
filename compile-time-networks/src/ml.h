@@ -17,7 +17,7 @@ struct DenseLayer {
     Output forwardPropagate(const Input &activation) const;
     template<typename Loss>
     Input backPropagate(const Input &activation, const Output &outputDerivative);
-    void commitDeltas(const double deltaRation);
+    void commitDeltas(const double deltaRatio);
 };
 
 template<size_t N>
@@ -32,7 +32,7 @@ struct BiasLayer {
     Output forwardPropagate(const Input &activation) const;
     template<typename Loss>
     Input backPropagate(const Input &activation, const Output &outputDerivative);
-    void commitDeltas(const double deltaRation);
+    void commitDeltas(const double deltaRatio);
 };
 
 template<size_t N, typename F>
@@ -44,7 +44,7 @@ struct ApplicationLayer {
     Output forwardPropagate(const Input &activation) const;
     template<typename Loss>
     Input backPropagate(const Input &activation, const Output &outputDerivative);
-    void commitDeltas(const double deltaRation);
+    void commitDeltas(const double deltaRatio);
 };
 
 template<typename FirstLayer, typename ...Rest>
@@ -59,7 +59,7 @@ struct NeuralNetwork {
     Output forwardPropagate(const Input &input) const;
     template<typename Loss>
     Input backPropagate(const Input &activation, const Output &target);
-    void commitDeltas(const double deltaRation);
+    void commitDeltas(const double deltaRatio);
 };
 
 template<typename FirstLayer> struct NeuralNetwork<FirstLayer> {
@@ -72,7 +72,7 @@ template<typename FirstLayer> struct NeuralNetwork<FirstLayer> {
     Output forwardPropagate(const Input &input) const;
     template<typename Loss>
     Input backPropagate(const Input &activation, const Output &target);
-    void commitDeltas(const double deltaRation);
+    void commitDeltas(const double deltaRatio);
 };
 
 template<typename Loss, typename Model>
@@ -84,9 +84,14 @@ struct Trainer {
 
     Trainer(Model *nn, const std::vector<DataPoint> &data);
     void run(
-        const size_t iter,
+        const size_t epochs,
         const size_t minibatchIter,
-        const size_t blockSize,
+        const size_t batchSize,
+        const double delta = 0.01
+    );
+    void runMinibatch(
+        const std::pair<size_t, size_t> interval,
+        const size_t iter,
         const double delta = 0.01
     );
     double findTotalLoss() const;

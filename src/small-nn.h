@@ -64,7 +64,6 @@ struct Matrix {
     double data[N][M];
 
     Matrix(const double value = 0);
-    Matrix(const Matrix<N, M> &oth);
 
     double* operator[](const size_t &i);
     const double* operator[](const size_t &i) const;
@@ -135,24 +134,19 @@ template<size_t N, size_t M>
 Matrix<N, M>::Matrix(const double value) {
     for(size_t i = 0; i < N; i ++) {
         for(size_t j = 0; j < M; j ++) {
-            this->data[i][j] = value;
+            data[i][j] = value;
         }
     }
 }
 
 template<size_t N, size_t M>
-Matrix<N, M>::Matrix(const Matrix<N, M> &oth) {
-    memcpy(this->data, oth.data, sizeof(this->data));
-}
-
-template<size_t N, size_t M>
 double* Matrix<N, M>::operator[](const size_t &i) {
-    return this->data[i];
+    return data[i];
 }
 
 template<size_t N, size_t M>
 const double* Matrix<N, M>::operator[](const size_t &i) const {
-    return this->data[i];
+    return data[i];
 }
 
 template<size_t N, size_t M>
@@ -196,7 +190,7 @@ Matrix<N, M> Matrix<N, M>::operator-(const Matrix<N, M> &oth) const {
 
 template<size_t N, size_t M>
 Matrix<N, M> Matrix<N, M>::operator=(const Matrix<N, M> &oth) {
-    memcpy(this->data, oth.data, sizeof(this->data));
+    memcpy(data, oth.data, sizeof(data));
     return *this;
 }
 
@@ -396,7 +390,7 @@ template<size_t N, size_t M>
 typename DenseLayer<N, M>::Output DenseLayer<N, M>::forwardPropagate(
     const DenseLayer<N, M>::Input &activation
 ) const {
-    return activation * this->weights;
+    return activation * weights;
 }
 
 template<size_t N, size_t M>
@@ -407,16 +401,16 @@ typename DenseLayer<N, M>::Input DenseLayer<N, M>::backPropagate(
 ) {
     for(size_t i = 0; i < N; i ++) {
         for(size_t j = 0; j < M; j ++) {
-            this->deltas[i][j] += activation[0][i] * outputDerivatives[0][j];
+            deltas[i][j] += activation[0][i] * outputDerivatives[0][j];
         }
     }
-    return outputDerivatives * this->weights.transpose();
+    return outputDerivatives * weights.transpose();
 }
 
 template<size_t N, size_t M>
 void DenseLayer<N, M>::commitDeltas(const double deltaRatio) {
-    this->weights = this->weights - this->deltas * deltaRatio;
-    this->deltas = Math::LinAlg::Matrix<N, M>(0);
+    weights = weights - deltas * deltaRatio;
+    deltas = Math::LinAlg::Matrix<N, M>(0);
 }
 
 template<size_t N>
@@ -426,7 +420,7 @@ template<size_t N>
 typename BiasLayer<N>::Output BiasLayer<N>::forwardPropagate(
     const typename BiasLayer<N>::Input &activation
 ) const {
-    return activation + this->bias;
+    return activation + bias;
 }
 
 template<size_t N>
@@ -435,14 +429,14 @@ typename BiasLayer<N>::Input BiasLayer<N>::backPropagate(
     const BiasLayer<N>::Input &activation,
     const BiasLayer<N>::Output &outputDerivatives
 ) {
-    this->deltas = this->deltas + outputDerivatives;
+    deltas = deltas + outputDerivatives;
     return outputDerivatives;
 }
 
 template<size_t N>
 void BiasLayer<N>::commitDeltas(const double deltaRatio) {
-    this->bias = this->bias - this->deltas * deltaRatio;
-    this->deltas = Math::LinAlg::Matrix<1, N>(0);
+    bias = bias - deltas * deltaRatio;
+    deltas = Math::LinAlg::Matrix<1, N>(0);
 }
 
 
@@ -488,8 +482,8 @@ template<typename FirstLayer, typename ...Rest>
 typename NeuralNetwork<FirstLayer, Rest...>::Output NeuralNetwork<FirstLayer, Rest...>::forwardPropagate(
     const NeuralNetwork<FirstLayer, Rest...>::Input &input
 ) const {
-    const auto ret = this->firstLayer.forwardPropagate(input);
-    return this->restNetwork.forwardPropagate(ret);
+    const auto ret = firstLayer.forwardPropagate(input);
+    return restNetwork.forwardPropagate(ret);
 }
 
 template<typename FirstLayer, typename ...Rest>
@@ -498,23 +492,23 @@ typename NeuralNetwork<FirstLayer, Rest...>::Input NeuralNetwork<FirstLayer, Res
     const NeuralNetwork<FirstLayer, Rest...>::Input &activation,
     const NeuralNetwork<FirstLayer, Rest...>::Output &target
 ) {
-    const auto out = this->firstLayer.forwardPropagate(activation);
-    const auto outputDerivatives = this->restNetwork.template backPropagate<Loss>(out, target);
-    const auto ret = this->firstLayer.template backPropagate<Loss>(activation, outputDerivatives);
+    const auto out = firstLayer.forwardPropagate(activation);
+    const auto outputDerivatives = restNetwork.template backPropagate<Loss>(out, target);
+    const auto ret = firstLayer.template backPropagate<Loss>(activation, outputDerivatives);
     return ret;
 }
 
 template<typename FirstLayer, typename ...Rest>
 void NeuralNetwork<FirstLayer, Rest...>::commitDeltas(const double deltaRatio) {
-    this->firstLayer.commitDeltas(deltaRatio);
-    this->restNetwork.commitDeltas(deltaRatio);
+    firstLayer.commitDeltas(deltaRatio);
+    restNetwork.commitDeltas(deltaRatio);
 }
 
 template<typename FirstLayer>
 typename NeuralNetwork<FirstLayer>::Output NeuralNetwork<FirstLayer>::forwardPropagate(
     const NeuralNetwork<FirstLayer>::Input &input
 ) const {
-    const auto ret = this->firstLayer.forwardPropagate(input);
+    const auto ret = firstLayer.forwardPropagate(input);
     return ret;
 }
 
@@ -524,15 +518,15 @@ typename NeuralNetwork<FirstLayer>::Input NeuralNetwork<FirstLayer>::backPropaga
     const NeuralNetwork<FirstLayer>::Input &activation,
     const NeuralNetwork<FirstLayer>::Output &target
 ) {
-    const auto out = this->firstLayer.forwardPropagate(activation);
+    const auto out = firstLayer.forwardPropagate(activation);
     const auto outputDerivatives = Math::LinAlg::zip<Loss::derivative>(out, target);
-    const auto ret = this->firstLayer.template backPropagate<Loss>(activation, outputDerivatives);
+    const auto ret = firstLayer.template backPropagate<Loss>(activation, outputDerivatives);
     return ret;
 }
 
 template<typename FirstLayer>
 void NeuralNetwork<FirstLayer>::commitDeltas(const double deltaRatio) {
-    this->firstLayer.commitDeltas(deltaRatio);
+    firstLayer.commitDeltas(deltaRatio);
 }
 
 };
@@ -551,11 +545,11 @@ void Trainer<Loss, Model>::runMinibatch(
 ) {
     for(size_t j = 0; j < iter; j ++) {
         for(size_t elem = interval.first; elem < interval.second; elem ++) {
-            this->nn->template backPropagate<Loss>(this->data[elem].first, this->data[elem].second);
+            nn->template backPropagate<Loss>(data[elem].first, data[elem].second);
         }
-        this->nn->commitDeltas(delta / (interval.second - interval.first));
+        nn->commitDeltas(delta / (interval.second - interval.first));
     }
-    const auto totalLoss = this->findTotalLoss();
+    const auto totalLoss = findTotalLoss();
     std::cout << "\r" << totalLoss << " for interval(" << interval.first << " " << interval.second << ")";
     std::flush(std::cout);
 }
@@ -568,20 +562,20 @@ void Trainer<Loss, Model>::run(
     const double delta
 ) {
     for(size_t i = 0; i < epochs; i ++) {
-        std::random_shuffle(this->data.begin(), this->data.end());
-        for(size_t start = 0; start < this->data.size(); start += batchSize) {
-            const auto end = std::min(start + batchSize, this->data.size());
-            this->runMinibatch({start, end}, minibatchIter, delta);
+        std::shuffle(data.begin(), data.end(), std::mt19937{std::random_device{}()});
+        for(size_t start = 0; start < data.size(); start += batchSize) {
+            const auto end = std::min(start + batchSize, data.size());
+            runMinibatch({start, end}, minibatchIter, delta);
         }
-        std::cout << "\rIteration " << i << " Loss: " << this->findTotalLoss() << std::endl;
+        std::cout << "\rIteration " << i << " Loss: " << findTotalLoss() << std::endl;
     }
 }
 
 template<typename Loss, typename Model>
 double Trainer<Loss, Model>::findTotalLoss() const {
     double ret = 0;
-    for(const auto &elem : this->data) {
-        const auto out = this->nn->forwardPropagate(elem.first);
+    for(const auto &elem : data) {
+        const auto out = nn->forwardPropagate(elem.first);
         const auto loss = Math::LinAlg::zip<Loss::apply>(out, elem.second);
         for(size_t i = 0; i < Model::Output::SIZE_N; i ++) {
             for(size_t j = 0; j < Model::Output::SIZE_M; j ++) {

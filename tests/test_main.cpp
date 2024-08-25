@@ -7,8 +7,6 @@ const double EPS = 1e-5;
 const double EPS_BIG = 1e-1;
 
 TEST(LinAlg, Mult) {
-    std::cout << "Testing linear algebra" << std::endl;
-
     const int64_t WIDTH = 3;
     const int64_t HEIGHT = 5;
     Matrix<HEIGHT, WIDTH> m;
@@ -17,10 +15,8 @@ TEST(LinAlg, Mult) {
             m[i][j] = i * 10 + j;
         }
     }
-    std::cout << m << std::endl;
 
     const auto mult = m * 5;
-    std::cout << mult << std::endl;
 
     for(int i = 0; i < HEIGHT; i ++) {
         for(int j = 0; j < WIDTH; j ++) {
@@ -30,8 +26,6 @@ TEST(LinAlg, Mult) {
 }
 
 TEST(ML, Backpropagation) {
-    std::cout << "Started testing backpropagation" << std::endl;
-
     #define FullyConnectedApplicationLayer(N, M, F) \
         MachineLearning::Layer::DenseLayer<N, M>, \
         MachineLearning::Layer::BiasLayer<M>, \
@@ -55,17 +49,13 @@ TEST(ML, Backpropagation) {
 
     const auto final = nn.forwardPropagate(input);
     const auto diff = final - output;
-    std::cout << "Optimized " << final << " " << output << " " << diff << std::endl;
 
     const auto total_diff = diff[0][0] + diff[0][1];
-    std::cout << total_diff << " " << diff[0][0] << " " << diff[0][1] << std::endl;
 
     assert(total_diff <= EPS_BIG);
 }
 
 TEST(ML, Train) {
-    std::cout << "Started testing full training" << std::endl;
-
     #define FullyConnectedApplicationLayer(N, M, F) \
         MachineLearning::Layer::DenseLayer<N, M>, \
         MachineLearning::Layer::BiasLayer<M>, \
@@ -90,7 +80,6 @@ TEST(ML, Train) {
     MachineLearning::Training::Trainer<Math::Continuous::QuadraticLoss, decltype(nn)> trainer(&nn, dataPoints);
     trainer.run(1000, 10, dataPoints.size(), 0.05);
     const auto finalTotalLoss = trainer.findTotalLoss();
-    std::cout << finalTotalLoss << std::endl;
 
     assert(finalTotalLoss <= EPS_BIG);
 }

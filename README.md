@@ -8,5 +8,5 @@ The heavy use of templating allows us to check if all layers are in the right sh
 TODO: Make it possible to embed pre-trained NN in an executable for faster response times.
 
 ## Examples:
-Current examples include a MNIST digit-recogniser, which achieves 91% at [Kaggle](https://www.kaggle.com/c/digit-recognizer), and a [visualisator](https://atanasdimitrov.xyz/digit/), which uses the aforementioned network.
+Current examples include a MNIST digit-recogniser, which achieves 91% at [Kaggle](https://www.kaggle.com/c/digit-recognizer), and a [visualisator](https://nenasko1.github.io/digit-recogniser-demo/), which uses the aforementioned network.
 

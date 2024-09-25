@@ -10,6 +10,7 @@
 #include <cstring>
 #include <stdio.h>
 #include <algorithm>
+#include <cstdint>
 
 namespace Math {
 
@@ -47,7 +48,7 @@ struct QuadraticLoss : public DyadicFunction<double> {
     static double derivative(const double x, const double y);
 };
 
-template<int32_t MIN, int32_t MAX>
+template<typename T, int32_t MIN, int32_t MAX>
 double randomValue();
 
 };
@@ -108,11 +109,22 @@ inline double LeakyRelu::derivative(const double x) { return (x >= 0) ? 1 : 0.01
 inline double QuadraticLoss::apply(const double x, const double y) { return (x - y) * (x - y); }
 inline double QuadraticLoss::derivative(const double x, const double y) { return 2 * x - 2 * y; }
 
-template<int32_t MIN, int32_t MAX>
-double randomValue() {
-    static_assert(MIN <= MAX, "Random value expects MIN <= MAX");
-    const auto ret = MIN + ((double)rand()) / (double)RAND_MAX * (MAX - MIN);
-    return ret;
+template<typename T, int32_t MIN, int32_t MAX>
+requires (MIN <= MAX && std::is_floating_point_v<T>)
+T randomValue() {
+    std::random_device rd;
+    std::mt19937 generator(rd());
+    std::uniform_real_distribution<> distrib(MIN, MAX);
+    return static_cast<T>(distrib(generator));
+}
+
+template<typename T, int32_t MIN, int32_t MAX>
+requires (MIN <= MAX && std::is_integral_v<T>)
+T randomValue() {
+    std::random_device rd;
+    std::mt19937 generator(rd());
+    std::uniform_int_distribution<> distrib(MIN, MAX);
+    return static_cast<T>(distrib(generator));
 }
 
 };
@@ -124,7 +136,7 @@ Matrix<N, M> Matrix<N, M>::random()  {
     Matrix<N, M> ret;
     for(size_t i = 0; i < N; i ++) {
         for(size_t j = 0; j < M; j ++) {
-            ret[i][j] = Continuous::randomValue<-1, 1>();
+            ret[i][j] = Continuous::randomValue<double, -1, 1>();
         }
     }
     return ret;
